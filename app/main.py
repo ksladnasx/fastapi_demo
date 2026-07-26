@@ -1,31 +1,34 @@
-import zoneinfo
-from datetime import datetime
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
-from fastapi.encoders import jsonable_encoder
-from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+
+from app.api import users
+from app.core.config import settings
+from app.db.session import init_db
 
 
-class Item(BaseModel):
-    title: str
-    timestamp: datetime
-    description: str | None = None
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    print("Starting up...")
+    init_db()
+    print(f"Database initialized: {settings.DATABASE_URL}")
+    yield
+    print("Shutting down...")
 
 
-app = FastAPI()
+app = FastAPI(
+    title="FastAPI Demo",
+    version="0.1.0",
+    lifespan=lifespan,
+)
+
+app.include_router(users.router)
 
 
-@app.get("/items/{id}")
-def read_item(id: str):
+@app.get("/")
+def root():
     return {
-        "id": id,
-        "title": "Foo",
-        "timestamp": jsonable_encoder(datetime.now()),  # noqa: DTZ005
+        "message": "FastAPI Demo",
+        "docs": "/docs",
+        "redoc": "/redoc",
     }
-
-
-@app.put("/items/{id}")
-def update_item(id: str, item: Item):
-    json_compatible_item_data = jsonable_encoder(item)
-    return JSONResponse(content=json_compatible_item_data)
