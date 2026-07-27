@@ -1,4 +1,4 @@
-# FastAPI Demo
+﻿# FastAPI Demo
 
 基于 FastAPI + SQLModel + MySQL 的简单用户 CRUD 示例项目。
 
@@ -6,36 +6,27 @@
 
 ```text
 app/
-│
 ├── api/
 │   ├── users.py        # 处理用户 HTTP 接口
 │   └── deps.py         # API 依赖示例，比如分页参数
-│
 ├── core/
 │   ├── config.py       # 全局配置
 │   └── security.py     # 安全相关工具示例
-│
 ├── db/
 │   ├── connection.py   # 数据库连接管理器
 │   ├── manager.py      # 数据库全局管理器
 │   └── init.sql        # 数据库初始化脚本
-│
 ├── models/
 │   └── user.py         # 数据库表映射
-│
 ├── schemas/
-│   └── user.py         # API 请求/响应模型
-│
+│   ├── user.py         # 用户请求/响应模型
+│   └── response.py     # 统一响应模型
 ├── crud/
 │   └── user.py         # 数据库操作
-│
 ├── services/
 │   └── user.py         # 用户业务逻辑
-│
 ├── main.py             # FastAPI 应用入口
-│
 ├── exceptions.py       # 统一业务异常
-│
 └── utils/
     └── common.py       # 公共工具函数
 ```
@@ -55,8 +46,6 @@ app/
 
 ## 调用流程
 
-当前用户接口的调用链路是：
-
 ```text
 api/users.py
   -> services/user.py
@@ -65,96 +54,61 @@ api/users.py
         -> db/connection.py
 ```
 
-### API 层
+## 统一响应格式
 
-`app/api/users.py` 只处理 HTTP 层逻辑，比如路由、状态码和请求参数。
+所有接口统一返回：
 
-示例：
+```json
+{
+  "code": 0,
+  "data": {},
+  "message": "success"
+}
+```
+
+成功响应由 `app/utils/common.py` 中的 `success_response()` 生成。
+
+响应模型定义在 `app/schemas/response.py`：
 
 ```python
-@router.post("/", response_model=UserRead, status_code=status.HTTP_201_CREATED)
+class ApiResponse(BaseModel, Generic[T]):
+    code: int = 0
+    data: T | None = None
+    message: str = "success"
+```
+
+用户接口示例：
+
+```python
+@router.post("/create_user", response_model=ApiResponse[UserRead])
 def create_user(user_data: UserCreate):
-    return UserService.create_user(user_data)
+    user = UserService.create_user(user_data)
+    return success_response(data=user, message="User created successfully")
 ```
 
-`app/api/deps.py` 提供了一个简单分页依赖。前端传 `page` 和 `page_size`，二者都必须是大于等于 1 的整数：
+异常响应也使用同样格式：
 
-```python
-pagination: PaginationDep
+```json
+{
+  "code": 404,
+  "data": null,
+  "message": "User not found"
+}
 ```
 
-### Service 层
+## 分页参数
 
-`app/services/user.py` 负责业务规则，比如：
+用户列表接口使用 `page` 和 `page_size`：
 
-- 用户名不能重复
-- 邮箱不能重复
-- 查询不到用户时抛出业务异常
-- 创建/更新前统一处理邮箱格式
-
-示例：
-
-```python
-if UserDao.get_by_email(user_data.email):
-    raise BadRequestException("Email already registered")
+```text
+GET /user/get_users?page=1&page_size=10
 ```
 
-### CRUD 层
+规则：
 
-`app/crud/user.py` 只负责数据库读写，不处理 HTTP，也尽量不写业务规则。
-
-示例：
-
-```python
-with get_sync_db_session() as session:
-    user = session.get(User, user_id)
-```
-
-### Model 层
-
-`app/models/user.py` 是 SQLModel 表映射。
-
-```python
-class User(UserBase, table=True):
-    __tablename__ = "users"
-```
-
-带有 `table=True` 的类会映射到数据库表。
-
-### Schema 层
-
-`app/schemas/user.py` 是 API 请求/响应模型。
-
-- `UserCreate`：创建用户请求体
-- `UserUpdate`：更新用户请求体
-- `UserRead`：接口响应模型
-
-路由里的 `response_model=UserRead` 表示返回数据会按 `UserRead` 输出。
-
-### DB 层
-
-`app/db/connection.py` 负责创建和释放数据库 `engine`，并配置连接池。
-
-`app/db/manager.py` 负责统一管理数据库生命周期：
-
-- `db_manager.init_db()`：启动时初始化表
-- `db_manager.close()`：关闭时释放连接池
-- `db_manager.health_check()`：数据库健康检查
-- `get_sync_db_session()`：提供同步 Session 上下文
-
-### Core 和 Utils
-
-`app/core/security.py` 提供了一个简单安全工具示例：
-
-```python
-verify_api_key(api_key, expected_api_key)
-```
-
-`app/utils/common.py` 提供了公共工具函数示例：
-
-```python
-normalize_email(email)
-```
+- `page >= 1`
+- `page_size >= 1`
+- `page_size <= 100`
 
 ## 数据库配置
 
@@ -208,9 +162,9 @@ http://127.0.0.1:8000/docs
 
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
-| `POST` | `/users/` | 创建用户 |
-| `GET` | `/users/` | 获取用户列表 |
-| `GET` | `/users/{user_id}` | 获取指定用户 |
-| `PUT` | `/users/{user_id}` | 更新用户 |
-| `DELETE` | `/users/{user_id}` | 删除用户 |
-
+| `POST` | `/user/create_user` | 创建用户 |
+| `POST` | `/user/create_users` | 批量创建用户 |
+| `GET` | `/user/get_users` | 获取用户列表 |
+| `GET` | `/user/get/{user_id}` | 获取指定用户 |
+| `PUT` | `/user/put/{user_id}` | 更新用户 |
+| `DELETE` | `/user/del/{user_id}` | 删除用户 |

@@ -35,7 +35,7 @@ class UserDao:
             if is_active is not None:
                 statement = statement.where(User.is_active == is_active)
 
-            offset = (page - 1) * page_size #计算偏移量，表示从哪条记录开始
+            offset = (page - 1) * page_size
             statement = statement.offset(offset).limit(page_size)
             return list(session.exec(statement).all())
 

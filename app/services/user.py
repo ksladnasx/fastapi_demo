@@ -17,7 +17,22 @@ class UserService:
             raise BadRequestException("Email already registered")
 
         return UserDao.create(user_data)
+    @classmethod
+    def create_users(cls, users_data: list[UserCreate]) -> list[User]:
+        created_users = []
+        for user_data in users_data:
+            user_data.email = normalize_email(user_data.email)
 
+            if UserDao.get_by_username(user_data.username):
+                raise BadRequestException(f"Username '{user_data.username}' already registered")
+
+            if UserDao.get_by_email(user_data.email):
+                raise BadRequestException(f"Email '{user_data.email}' already registered")
+
+            created_user = UserDao.create(user_data)
+            created_users.append(created_user)
+
+        return created_users
     @classmethod
     def list_users(
         cls,
