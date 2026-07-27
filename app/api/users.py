@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, status
 
 from app.db.crud.user import UserDao
-from app.db.schemas.user import UserCreate, UserRead, UserUpdate
+from app.schemas.user import UserCreate, UserRead, UserUpdate
 
 router = APIRouter(prefix="/users", tags=["users"])
 

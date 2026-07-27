@@ -13,15 +13,17 @@ app/
   db/
     connection.py     # 数据库连接管理器，负责 engine、连接池配置和释放
     manager.py        # 数据库全局管理器，负责初始化、健康检查和 Session 入口
-    models/
+    init.sql          # 数据库初始化文件
+    models/           # 数据库和pydantic映射文件
       user.py         # User 表映射
-    schemas/
-      user.py         # API 请求/响应模型
-      init.sql        # 初始化 users 表和测试数据
-    crud/
+    crud/             # 数据库操作文件
       user.py         # UserDao 数据库操作类
+  schemas/
+      user.py         # API 请求/响应模型    
   main.py             # FastAPI 应用入口
 run.py                # 本地启动脚本
+pyproject.toml        # uv包管理文件
+README.md
 ```
 
 ## 分层说明
@@ -67,7 +69,7 @@ with get_sync_db_session() as session:
     ...
 ```
 
-### `app/db/schemas/user.py`
+### `app/schemas/user.py`
 
 这里放 API 的请求和响应模型，不直接映射数据库表。
 
