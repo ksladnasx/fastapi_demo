@@ -18,8 +18,8 @@ def get_users(
     is_active: bool | None = None,
 ):
     return UserService.list_users(
-        skip=pagination.skip,
-        limit=pagination.limit,
+        page=pagination.page,
+        page_size=pagination.page_size,
         is_active=is_active,
     )
 

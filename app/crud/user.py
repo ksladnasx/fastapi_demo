@@ -25,8 +25,8 @@ class UserDao:
     @classmethod
     def list(
         cls,
-        skip: int = 0,
-        limit: int = 100,
+        page: int = 1,
+        page_size: int = 10,
         is_active: bool | None = None,
     ) -> list[User]:
         with get_sync_db_session() as session:
@@ -35,7 +35,8 @@ class UserDao:
             if is_active is not None:
                 statement = statement.where(User.is_active == is_active)
 
-            statement = statement.offset(skip).limit(limit)
+            offset = (page - 1) * page_size #计算偏移量，表示从哪条记录开始
+            statement = statement.offset(offset).limit(page_size)
             return list(session.exec(statement).all())
 
     @classmethod

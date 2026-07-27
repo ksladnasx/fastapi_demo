@@ -5,15 +5,15 @@ from pydantic import BaseModel
 
 
 class PaginationParams(BaseModel):
-    skip: int = 0
-    limit: int = 100
+    page: int = 1
+    page_size: int = 10
 
 
 def get_pagination(
-    skip: Annotated[int, Query(ge=0)] = 0,
-    limit: Annotated[int, Query(ge=1, le=100)] = 100,
+    page: Annotated[int, Query(ge=1)] = 1,
+    page_size: Annotated[int, Query(ge=1, le=100)] = 10,
 ) -> PaginationParams:
-    return PaginationParams(skip=skip, limit=limit)
+    return PaginationParams(page=page, page_size=page_size)
 
 
 PaginationDep = Annotated[PaginationParams, Depends(get_pagination)]

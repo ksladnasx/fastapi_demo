@@ -77,7 +77,7 @@ def create_user(user_data: UserCreate):
     return UserService.create_user(user_data)
 ```
 
-`app/api/deps.py` 提供了一个简单分页依赖：
+`app/api/deps.py` 提供了一个简单分页依赖。前端传 `page` 和 `page_size`，二者都必须是大于等于 1 的整数：
 
 ```python
 pagination: PaginationDep
@@ -213,3 +213,4 @@ http://127.0.0.1:8000/docs
 | `GET` | `/users/{user_id}` | 获取指定用户 |
 | `PUT` | `/users/{user_id}` | 更新用户 |
 | `DELETE` | `/users/{user_id}` | 删除用户 |
+

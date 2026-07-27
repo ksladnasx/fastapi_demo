@@ -21,11 +21,11 @@ class UserService:
     @classmethod
     def list_users(
         cls,
-        skip: int = 0,
-        limit: int = 100,
+        page: int = 1,
+        page_size: int = 10,
         is_active: bool | None = None,
     ) -> list[User]:
-        return UserDao.list(skip=skip, limit=limit, is_active=is_active)
+        return UserDao.list(page=page, page_size=page_size, is_active=is_active)
 
     @classmethod
     def get_user(cls, user_id: int) -> User:
