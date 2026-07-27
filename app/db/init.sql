@@ -1,3 +1,7 @@
+CREATE DATABASE IF NOT EXISTS `fastapi_demo`
+    DEFAULT CHARACTER SET utf8mb4
+    DEFAULT COLLATE utf8mb4_unicode_ci;
+
 USE `fastapi_demo`;
 
 CREATE TABLE IF NOT EXISTS `users` (

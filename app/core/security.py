@@ -1,9 +1,11 @@
 import base64
+import binascii
 import hashlib
 import hmac
 import json
 import secrets
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
 from app.core.config import settings
 
@@ -43,19 +45,69 @@ def verify_password(password: str, password_hash: str) -> bool:
 
 def create_access_token(subject: str) -> str:
     expire = datetime.now(UTC) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    payload = {
-        "sub": subject,
-        "exp": int(expire.timestamp()),
+    header = {
+        "alg": "HS256",
+        "typ": "JWT",
     }
+    payload = {
+        "sub": subject,  # 用户 id
+        "exp": int(expire.timestamp()),  # 过期时间
+    }
+    encoded_header = _urlsafe_b64encode(
+        json.dumps(header, separators=(",", ":")).encode("utf-8")
+    )
     payload_bytes = json.dumps(payload, separators=(",", ":")).encode("utf-8")
     encoded_payload = _urlsafe_b64encode(payload_bytes)
+    signing_input = f"{encoded_header}.{encoded_payload}"
+
+    # 后端用 SECRET_KEY 对 header 和 payload 签名，防止客户端篡改 token 内容。
     signature = hmac.new(
         settings.SECRET_KEY.encode("utf-8"),
-        encoded_payload.encode("utf-8"),
+        signing_input.encode("utf-8"),
         hashlib.sha256,
     ).digest()
-    return f"{encoded_payload}.{_urlsafe_b64encode(signature)}"
+    return f"{signing_input}.{_urlsafe_b64encode(signature)}"
+
+
+def decode_access_token(token: str) -> dict[str, Any] | None:
+    try:
+        encoded_header, encoded_payload, encoded_signature = token.split(".", 2)
+    except ValueError:
+        return None
+
+    signing_input = f"{encoded_header}.{encoded_payload}"
+    expected_signature = hmac.new(
+        settings.SECRET_KEY.encode("utf-8"),
+        signing_input.encode("utf-8"),
+        hashlib.sha256,
+    ).digest()
+    try:
+        actual_signature = _urlsafe_b64decode(encoded_signature)
+    except (binascii.Error, ValueError):
+        return None
+
+    if not secrets.compare_digest(expected_signature, actual_signature):
+        return None
+
+    try:
+        header = json.loads(_urlsafe_b64decode(encoded_header))
+        payload = json.loads(_urlsafe_b64decode(encoded_payload))
+    except (binascii.Error, json.JSONDecodeError, ValueError):
+        return None
+
+    if header.get("alg") != "HS256" or header.get("typ") != "JWT":
+        return None
+
+    if payload.get("exp", 0) < int(datetime.now(UTC).timestamp()):
+        return None
+
+    return payload
 
 
 def _urlsafe_b64encode(data: bytes) -> str:
     return base64.urlsafe_b64encode(data).decode("utf-8").rstrip("=")
+
+
+def _urlsafe_b64decode(data: str) -> bytes:
+    padding = "=" * (-len(data) % 4)
+    return base64.urlsafe_b64decode(data + padding)

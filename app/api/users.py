@@ -1,6 +1,6 @@
 from fastapi import APIRouter, status
 
-from app.api.deps import PaginationDep
+from app.api.deps import CurrentUserDep, PaginationDep
 from app.schemas.response import ApiResponse
 from app.schemas.user import TokenRead, UserCreate, UserLogin, UserRead, UserUpdate
 from app.services.user import UserService
@@ -25,12 +25,17 @@ def login(login_data: UserLogin):
     return success_response(data=token, message="Login successfully")
 
 
+@router.get("/me", response_model=ApiResponse[UserRead])
+def get_me(current_user: CurrentUserDep):
+    return success_response(data=current_user)
+
+
 @router.post(
     "/create_user",
     response_model=ApiResponse[UserRead],
     status_code=status.HTTP_201_CREATED,
 )
-def create_user(user_data: UserCreate):
+def create_user(user_data: UserCreate, current_user: CurrentUserDep):
     user = UserService.create_user(user_data)
     return success_response(data=user, message="User created successfully")
 
@@ -40,7 +45,7 @@ def create_user(user_data: UserCreate):
     response_model=ApiResponse[list[UserRead]],
     status_code=status.HTTP_201_CREATED,
 )
-def create_users(users_data: list[UserCreate]):
+def create_users(users_data: list[UserCreate], current_user: CurrentUserDep):
     users = UserService.create_users(users_data)
     return success_response(data=users, message="Users created successfully")
 
@@ -48,6 +53,7 @@ def create_users(users_data: list[UserCreate]):
 @router.get("/get_users", response_model=ApiResponse[list[UserRead]])
 def get_users(
     pagination: PaginationDep,
+    current_user: CurrentUserDep,
     is_active: bool | None = None,
 ):
     users = UserService.list_users(
@@ -59,18 +65,18 @@ def get_users(
 
 
 @router.get("/get/{user_id}", response_model=ApiResponse[UserRead])
-def get_user(user_id: int):
+def get_user(user_id: int, current_user: CurrentUserDep):
     user = UserService.get_user(user_id)
     return success_response(data=user)
 
 
 @router.put("/put/{user_id}", response_model=ApiResponse[UserRead])
-def update_user(user_id: int, user_data: UserUpdate):
+def update_user(user_id: int, user_data: UserUpdate, current_user: CurrentUserDep):
     user = UserService.update_user(user_id, user_data)
     return success_response(data=user, message="User updated successfully")
 
 
 @router.delete("/del/{user_id}", response_model=ApiResponse[None])
-def delete_user(user_id: int):
+def delete_user(user_id: int, current_user: CurrentUserDep):
     UserService.delete_user(user_id)
     return success_response(message="User deleted successfully")

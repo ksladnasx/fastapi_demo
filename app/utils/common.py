@@ -3,7 +3,7 @@ def normalize_email(email: str) -> str:
     return email.strip().lower()
 
 
-def success_response(data=None, message: str = "success", code: int = 0) -> dict:
+def success_response(data=None, message: str = "success", code: int = 201) -> dict:
     return {
         "code": code,
         "data": data,

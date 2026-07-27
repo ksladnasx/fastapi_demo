@@ -110,6 +110,104 @@ GET /user/get_users?page=1&page_size=10
 - `page_size >= 1`
 - `page_size <= 100`
 
+## 登录认证与 JWT
+
+项目使用登录接口签发 `access_token`，后续受保护接口需要在请求头中携带这个 token。
+
+登录接口：
+
+```text
+POST /user/login
+```
+
+请求示例：
+
+```json
+{
+  "username": "admin",
+  "password": "admin123"
+}
+```
+
+响应中的 `data.access_token` 就是访问令牌：
+
+```json
+{
+  "code": 0,
+  "data": {
+    "access_token": "header.payload.signature",
+    "token_type": "bearer",
+    "expires_in": 86400,
+    "user": {
+      "id": 1,
+      "username": "admin",
+      "email": "admin@example.com",
+      "full_name": "Administrator",
+      "is_active": true,
+      "created_at": "2026-07-27T00:00:00",
+      "updated_at": null
+    }
+  },
+  "message": "Login successfully"
+}
+```
+
+后续请求需要携带：
+
+```http
+Authorization: Bearer your_access_token
+```
+
+当前 JWT 由三部分组成：
+
+```text
+header.payload.signature
+```
+
+| 部分 | 说明 |
+| --- | --- |
+| `header` | 声明 token 类型和签名算法，例如 `typ=JWT`、`alg=HS256` |
+| `payload` | 保存业务数据，目前包含 `sub` 用户 id 和 `exp` 过期时间 |
+| `signature` | 使用 `SECRET_KEY` 对 `header.payload` 做 HMAC-SHA256 签名 |
+
+签发逻辑在 `app/core/security.py` 的 `create_access_token()`：
+
+1. 生成 `header`，声明使用 `HS256`。
+2. 生成 `payload`，写入当前用户 id 和过期时间。
+3. 对 `header` 和 `payload` 分别做 Base64URL 编码。
+4. 使用 `SECRET_KEY` 对 `header.payload` 生成签名。
+5. 拼成 `header.payload.signature` 返回给前端。
+
+校验逻辑在 `app/core/security.py` 的 `decode_access_token()`：
+
+1. 按 `.` 拆分 token，必须拆成三段。
+2. 用相同的 `SECRET_KEY` 和算法重新计算签名。
+3. 对比客户端传来的签名和后端重新计算的签名。
+4. 解析 `header`，确认算法是 `HS256`，类型是 `JWT`。
+5. 解析 `payload`，检查 `exp` 是否过期。
+6. 从 `sub` 取出用户 id，再查询数据库确认用户存在且处于启用状态。
+
+认证依赖在 `app/api/deps.py` 的 `get_current_user()`。接口参数中加入 `current_user: CurrentUserDep` 后，该接口就会要求请求头必须带合法 token。
+
+当前公开接口：
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| `POST` | `/user/register` | 注册用户 |
+| `POST` | `/user/login` | 用户登录 |
+
+当前需要登录的接口：
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| `GET` | `/user/me` | 获取当前登录用户 |
+| `POST` | `/user/create_user` | 创建用户 |
+| `POST` | `/user/create_users` | 批量创建用户 |
+| `GET` | `/user/get_users` | 获取用户列表 |
+| `GET` | `/user/get/{user_id}` | 获取指定用户 |
+| `PUT` | `/user/put/{user_id}` | 更新用户 |
+| `DELETE` | `/user/del/{user_id}` | 删除用户 |
+
 ## 数据库配置
 
 请确保你本地已经存在以下 MySQL 配置：
@@ -164,6 +262,7 @@ http://127.0.0.1:8000/docs
 | --- | --- | --- |
 | `POST` | `/user/register` | 注册用户 |
 | `POST` | `/user/login` | 用户登录 |
+| `GET` | `/user/me` | 获取当前登录用户 |
 | `POST` | `/user/create_user` | 创建用户 |
 | `POST` | `/user/create_users` | 批量创建用户 |
 | `GET` | `/user/get_users` | 获取用户列表 |
