@@ -1,4 +1,3 @@
-# 数据库的模型和 Pydantic 模式之间的桥梁
 from datetime import datetime
 
 from sqlmodel import SQLModel

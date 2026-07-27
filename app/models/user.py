@@ -2,7 +2,9 @@ from datetime import datetime
 from typing import Any
 
 from sqlalchemy import Column, DateTime, func
-from sqlmodel import Field, SQLModel, select
+from sqlmodel import Field, Session, SQLModel, select
+
+from app.db.manager import get_sync_db_session
 
 
 class UserBase(SQLModel):
@@ -25,28 +27,22 @@ class User(UserBase, table=True):
         sa_column=Column(DateTime, onupdate=func.now()),
     )
 
+
+class UserDao:
     @classmethod
-    def get(cls, user_id: int) -> "User | None":
-        from app.db.session import get_sync_db_session
-
+    def get(cls, user_id: int) -> User | None:
         with get_sync_db_session() as session:
-            return session.get(cls, user_id)
-
-    @classmethod
-    def get_by_username(cls, username: str) -> "User | None":
-        from app.db.session import get_sync_db_session
-
-        with get_sync_db_session() as session:
-            statement = select(cls).where(cls.username == username)
-            return session.exec(statement).first()
+            return session.get(User, user_id)
 
     @classmethod
-    def get_by_email(cls, email: str) -> "User | None":
-        from app.db.session import get_sync_db_session
-
+    def get_by_username(cls, username: str) -> User | None:
         with get_sync_db_session() as session:
-            statement = select(cls).where(cls.email == email)
-            return session.exec(statement).first()
+            return cls._get_by_username(session, username)
+
+    @classmethod
+    def get_by_email(cls, email: str) -> User | None:
+        with get_sync_db_session() as session:
+            return cls._get_by_email(session, email)
 
     @classmethod
     def list(
@@ -54,22 +50,18 @@ class User(UserBase, table=True):
         skip: int = 0,
         limit: int = 100,
         is_active: bool | None = None,
-    ) -> list["User"]:
-        from app.db.session import get_sync_db_session
-
+    ) -> list[User]:
         with get_sync_db_session() as session:
-            statement = select(cls)
+            statement = select(User)
 
             if is_active is not None:
-                statement = statement.where(cls.is_active == is_active)
+                statement = statement.where(User.is_active == is_active)
 
             statement = statement.offset(skip).limit(limit)
             return list(session.exec(statement).all())
 
     @classmethod
-    def create(cls, user_data: Any) -> "User":
-        from app.db.session import get_sync_db_session
-
+    def create(cls, user_data: Any) -> User:
         with get_sync_db_session() as session:
             if cls._get_by_username(session, user_data.username):
                 raise ValueError("Username already registered")
@@ -77,24 +69,16 @@ class User(UserBase, table=True):
             if cls._get_by_email(session, user_data.email):
                 raise ValueError("Email already registered")
 
-            user = cls.model_validate(user_data)
-
-            try:
-                session.add(user)
-                session.commit()
-                session.refresh(user)
-            except Exception:
-                session.rollback()
-                raise
-
+            user = User.model_validate(user_data)
+            session.add(user)
+            session.commit()
+            session.refresh(user)
             return user
 
     @classmethod
-    def update(cls, user_id: int, user_data: Any) -> "User | None":
-        from app.db.session import get_sync_db_session
-
+    def update(cls, user_id: int, user_data: Any) -> User | None:
         with get_sync_db_session() as session:
-            user = session.get(cls, user_id)
+            user = session.get(User, user_id)
             if not user:
                 return None
 
@@ -115,40 +99,28 @@ class User(UserBase, table=True):
             for field, value in update_data.items():
                 setattr(user, field, value)
 
-            try:
-                session.add(user)
-                session.commit()
-                session.refresh(user)
-            except Exception:
-                session.rollback()
-                raise
-
+            session.add(user)
+            session.commit()
+            session.refresh(user)
             return user
 
     @classmethod
     def delete(cls, user_id: int) -> bool:
-        from app.db.session import get_sync_db_session
-
         with get_sync_db_session() as session:
-            user = session.get(cls, user_id)
+            user = session.get(User, user_id)
             if not user:
                 return False
 
-            try:
-                session.delete(user)
-                session.commit()
-            except Exception:
-                session.rollback()
-                raise
-
+            session.delete(user)
+            session.commit()
             return True
 
-    @classmethod
-    def _get_by_username(cls, session, username: str) -> "User | None":
-        statement = select(cls).where(cls.username == username)
+    @staticmethod
+    def _get_by_username(session: Session, username: str) -> User | None:
+        statement = select(User).where(User.username == username)
         return session.exec(statement).first()
 
-    @classmethod
-    def _get_by_email(cls, session, email: str) -> "User | None":
-        statement = select(cls).where(cls.email == email)
+    @staticmethod
+    def _get_by_email(session: Session, email: str) -> User | None:
+        statement = select(User).where(User.email == email)
         return session.exec(statement).first()

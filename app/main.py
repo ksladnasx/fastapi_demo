@@ -4,15 +4,16 @@ from fastapi import FastAPI
 
 from app.api import users
 from app.core.config import settings
-from app.db.session import init_db
+from app.db.manager import db_manager
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("Starting up...")
-    init_db()
+    db_manager.init_db()
     print(f"Database initialized: {settings.DATABASE_URL}")
     yield
+    db_manager.close()
     print("Shutting down...")
 
 
@@ -22,6 +23,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# 路由分发
 app.include_router(users.router)
 
 
