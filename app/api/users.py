@@ -2,11 +2,27 @@ from fastapi import APIRouter, status
 
 from app.api.deps import PaginationDep
 from app.schemas.response import ApiResponse
-from app.schemas.user import UserCreate, UserRead, UserUpdate
+from app.schemas.user import TokenRead, UserCreate, UserLogin, UserRead, UserUpdate
 from app.services.user import UserService
 from app.utils.common import success_response
 
 router = APIRouter(prefix="/user", tags=["users"])
+
+
+@router.post(
+    "/register",
+    response_model=ApiResponse[UserRead],
+    status_code=status.HTTP_201_CREATED,
+)
+def register(user_data: UserCreate):
+    user = UserService.register(user_data)
+    return success_response(data=user, message="Register successfully")
+
+
+@router.post("/login", response_model=ApiResponse[TokenRead])
+def login(login_data: UserLogin):
+    token = UserService.login(login_data)
+    return success_response(data=token, message="Login successfully")
 
 
 @router.post(

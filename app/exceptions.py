@@ -17,6 +17,10 @@ class NotFoundException(AppException):
     status_code = status.HTTP_404_NOT_FOUND
 
 
+class UnauthorizedException(AppException):
+    status_code = status.HTTP_401_UNAUTHORIZED
+
+
 def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(AppException)
     async def app_exception_handler(

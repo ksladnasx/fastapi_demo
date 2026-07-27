@@ -162,9 +162,18 @@ http://127.0.0.1:8000/docs
 
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
+| `POST` | `/user/register` | 注册用户 |
+| `POST` | `/user/login` | 用户登录 |
 | `POST` | `/user/create_user` | 创建用户 |
 | `POST` | `/user/create_users` | 批量创建用户 |
 | `GET` | `/user/get_users` | 获取用户列表 |
 | `GET` | `/user/get/{user_id}` | 获取指定用户 |
 | `PUT` | `/user/put/{user_id}` | 更新用户 |
 | `DELETE` | `/user/del/{user_id}` | 删除用户 |
+
+初始化脚本内置示例账号：
+
+| 用户名 | 密码 |
+| --- | --- |
+| `admin` | `admin123` |
+| `testuser` | `test123` |

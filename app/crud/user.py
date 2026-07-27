@@ -55,7 +55,11 @@ class UserDao:
             if not user:
                 return None
 
-            update_data = user_data.model_dump(exclude_unset=True)
+            update_data = (
+                user_data
+                if isinstance(user_data, dict)
+                else user_data.model_dump(exclude_unset=True)
+            )
             for field, value in update_data.items():
                 setattr(user, field, value)
 

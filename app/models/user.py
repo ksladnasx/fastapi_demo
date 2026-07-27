@@ -15,6 +15,7 @@ class User(UserBase, table=True):
     __tablename__ = "users"
 
     id: int | None = Field(default=None, primary_key=True)
+    password_hash: str = Field(max_length=255)
     created_at: datetime | None = Field(
         default=None,
         sa_column=Column(DateTime, server_default=func.now()),
