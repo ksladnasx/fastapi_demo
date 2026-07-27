@@ -13,20 +13,22 @@ app/
   db/
     connection.py     # 数据库连接管理器，负责 engine、连接池配置和释放
     manager.py        # 数据库全局管理器，负责初始化、健康检查和 Session 入口
-  models/
-    user.py           # User 表映射 + UserDao 数据库操作类
-  schemas/
-    user.py           # API 请求/响应模型
-    init.sql          # 初始化 users 表和测试数据
+    models/
+      user.py         # User 表映射
+    schemas/
+      user.py         # API 请求/响应模型
+      init.sql        # 初始化 users 表和测试数据
+    crud/
+      user.py         # UserDao 数据库操作类
   main.py             # FastAPI 应用入口
 run.py                # 本地启动脚本
 ```
 
 ## 分层说明
 
-### `app/models/user.py`
+### `app/db/models/user.py`
 
-这里放数据库相关模型和数据库操作类。
+这里放数据库表映射模型。
 
 `User` 是 SQLModel 表映射：
 
@@ -36,6 +38,10 @@ class User(UserBase, table=True):
 ```
 
 带有 `table=True` 的类会映射到数据库表。本项目中它对应 MySQL 里的 `users` 表。
+
+### `app/db/crud/user.py`
+
+这里放用户相关数据库操作类。
 
 `UserDao` 是用户数据操作类：
 
@@ -61,7 +67,7 @@ with get_sync_db_session() as session:
     ...
 ```
 
-### `app/schemas/user.py`
+### `app/db/schemas/user.py`
 
 这里放 API 的请求和响应模型，不直接映射数据库表。
 
@@ -147,7 +153,7 @@ mysql+pymysql://fastapi:fastapi@localhost:3306/fastapi_demo?charset=utf8mb4
 在已有的 `fastapi_demo` 数据库中创建 `users` 表并插入测试数据：
 
 ```powershell
-mysql --user=fastapi --password=fastapi --database=fastapi_demo --execute="SOURCE D:/Code/backend_demo/fastapi_demo/app/schemas/init.sql"
+mysql --user=fastapi --password=fastapi --database=fastapi_demo --execute="SOURCE D:/Code/backend_demo/fastapi_demo/app/db/schemas/init.sql"
 ```
 
 验证初始化结果：

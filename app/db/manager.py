@@ -1,9 +1,8 @@
 from collections.abc import Generator
 from contextlib import contextmanager
 
-from sqlalchemy import text
 from sqlalchemy.engine import Engine
-from sqlmodel import Session, SQLModel
+from sqlmodel import Session, SQLModel, select
 
 from app.db.connection import DatabaseConnection, db_connection
 
@@ -17,7 +16,7 @@ class DatabaseManager:
         return self.connection.engine
 
     def init_db(self) -> None:
-        from app.models import User  # noqa: F401
+        from app.db.models import User  # noqa: F401
 
         SQLModel.metadata.create_all(self.engine)
 
@@ -26,7 +25,7 @@ class DatabaseManager:
 
     def health_check(self) -> bool:
         with get_sync_db_session() as session:
-            return session.execute(text("SELECT 1")).scalar() == 1
+            return session.exec(select(1)).first() == 1
 
     def pool_status(self) -> str:
         return self.connection.pool_status()
