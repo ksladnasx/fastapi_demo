@@ -1,4 +1,4 @@
-﻿# FastAPI Demo
+# FastAPI Demo
 
 基于 FastAPI + SQLModel + MySQL 的简单用户 CRUD 示例项目。
 
@@ -6,135 +6,155 @@
 
 ```text
 app/
-  api/
-    users.py          # 用户路由，只负责 HTTP 请求和响应
-  core/
-    config.py         # 项目配置，比如数据库连接地址
-  db/
-    connection.py     # 数据库连接管理器，负责 engine、连接池配置和释放
-    manager.py        # 数据库全局管理器，负责初始化、健康检查和 Session 入口
-    init.sql          # 数据库初始化文件
-    models/           # 数据库和pydantic映射文件
-      user.py         # User 表映射
-    crud/             # 数据库操作文件
-      user.py         # UserDao 数据库操作类
-  schemas/
-      user.py         # API 请求/响应模型    
-  main.py             # FastAPI 应用入口
-run.py                # 本地启动脚本
-pyproject.toml        # uv包管理文件
-README.md
+│
+├── api/
+│   ├── users.py        # 处理用户 HTTP 接口
+│   └── deps.py         # API 依赖示例，比如分页参数
+│
+├── core/
+│   ├── config.py       # 全局配置
+│   └── security.py     # 安全相关工具示例
+│
+├── db/
+│   ├── connection.py   # 数据库连接管理器
+│   ├── manager.py      # 数据库全局管理器
+│   └── init.sql        # 数据库初始化脚本
+│
+├── models/
+│   └── user.py         # 数据库表映射
+│
+├── schemas/
+│   └── user.py         # API 请求/响应模型
+│
+├── crud/
+│   └── user.py         # 数据库操作
+│
+├── services/
+│   └── user.py         # 用户业务逻辑
+│
+├── main.py             # FastAPI 应用入口
+│
+├── exceptions.py       # 统一业务异常
+│
+└── utils/
+    └── common.py       # 公共工具函数
 ```
 
-## 分层说明
+## 分层职责
 
-### `app/db/models/user.py`
+| 层 | 职责 |
+| --- | --- |
+| `api` | 处理 HTTP 请求和响应 |
+| `schemas` | 接口数据模型 |
+| `services` | 业务逻辑 |
+| `crud` | 数据库操作 |
+| `models` | 数据库表映射 |
+| `db` | 数据库连接 |
+| `core` | 全局配置、安全 |
+| `utils` | 公共工具 |
 
-这里放数据库表映射模型。
+## 调用流程
 
-`User` 是 SQLModel 表映射：
+当前用户接口的调用链路是：
+
+```text
+api/users.py
+  -> services/user.py
+    -> crud/user.py
+      -> db/manager.py
+        -> db/connection.py
+```
+
+### API 层
+
+`app/api/users.py` 只处理 HTTP 层逻辑，比如路由、状态码和请求参数。
+
+示例：
+
+```python
+@router.post("/", response_model=UserRead, status_code=status.HTTP_201_CREATED)
+def create_user(user_data: UserCreate):
+    return UserService.create_user(user_data)
+```
+
+`app/api/deps.py` 提供了一个简单分页依赖：
+
+```python
+pagination: PaginationDep
+```
+
+### Service 层
+
+`app/services/user.py` 负责业务规则，比如：
+
+- 用户名不能重复
+- 邮箱不能重复
+- 查询不到用户时抛出业务异常
+- 创建/更新前统一处理邮箱格式
+
+示例：
+
+```python
+if UserDao.get_by_email(user_data.email):
+    raise BadRequestException("Email already registered")
+```
+
+### CRUD 层
+
+`app/crud/user.py` 只负责数据库读写，不处理 HTTP，也尽量不写业务规则。
+
+示例：
+
+```python
+with get_sync_db_session() as session:
+    user = session.get(User, user_id)
+```
+
+### Model 层
+
+`app/models/user.py` 是 SQLModel 表映射。
 
 ```python
 class User(UserBase, table=True):
-    ...
+    __tablename__ = "users"
 ```
 
-带有 `table=True` 的类会映射到数据库表。本项目中它对应 MySQL 里的 `users` 表。
+带有 `table=True` 的类会映射到数据库表。
 
-### `app/db/crud/user.py`
+### Schema 层
 
-这里放用户相关数据库操作类。
+`app/schemas/user.py` 是 API 请求/响应模型。
 
-`UserDao` 是用户数据操作类：
+- `UserCreate`：创建用户请求体
+- `UserUpdate`：更新用户请求体
+- `UserRead`：接口响应模型
+
+路由里的 `response_model=UserRead` 表示返回数据会按 `UserRead` 输出。
+
+### DB 层
+
+`app/db/connection.py` 负责创建和释放数据库 `engine`，并配置连接池。
+
+`app/db/manager.py` 负责统一管理数据库生命周期：
+
+- `db_manager.init_db()`：启动时初始化表
+- `db_manager.close()`：关闭时释放连接池
+- `db_manager.health_check()`：数据库健康检查
+- `get_sync_db_session()`：提供同步 Session 上下文
+
+### Core 和 Utils
+
+`app/core/security.py` 提供了一个简单安全工具示例：
 
 ```python
-class UserDao:
-    ...
+verify_api_key(api_key, expected_api_key)
 ```
 
-用户的增删改查都定义在这里，比如：
+`app/utils/common.py` 提供了公共工具函数示例：
 
 ```python
-UserDao.create(...)
-UserDao.get(...)
-UserDao.list(...)
-UserDao.update(...)
-UserDao.delete(...)
+normalize_email(email)
 ```
-
-这些方法内部统一使用：
-
-```python
-with get_sync_db_session() as session:
-    ...
-```
-
-### `app/schemas/user.py`
-
-这里放 API 的请求和响应模型，不直接映射数据库表。
-
-- `UserCreate`：创建用户时的请求体
-- `UserUpdate`：更新用户时的请求体
-- `UserRead`：接口返回给前端的数据结构
-
-路由里的 `response_model=UserRead` 表示接口响应会按照 `UserRead` 的字段进行输出。
-
-### `app/api/users.py`
-
-这里放用户相关路由。路由层不直接操作数据库，只调用 `UserDao`。
-
-例如：
-
-```python
-return UserDao.create(user_data)
-```
-
-### `app/db/connection.py`
-
-这里放数据库连接管理器 `DatabaseConnection`。
-
-它负责：
-
-- 延迟创建数据库 `engine`
-- 配置连接池参数
-- 释放数据库连接池
-- 查看连接池状态
-
-当前连接池配置在这里：
-
-```python
-create_engine(
-    settings.DATABASE_URL,
-    echo=settings.DATABASE_ECHO,
-    pool_pre_ping=True,
-    pool_recycle=3600,
-)
-```
-
-### `app/db/manager.py`
-
-这里放数据库全局管理器 `DatabaseManager`。
-
-它负责：
-
-- 初始化数据库表
-- 关闭数据库连接池
-- 提供健康检查
-- 提供连接池状态查看
-- 提供统一的同步 Session 上下文
-
-当前项目使用同步数据库会话：
-
-```python
-with get_sync_db_session() as session:
-    ...
-```
-
-`db_manager.init_db()` 会在项目启动时根据 SQLModel 表模型自动创建表。
-
-`db_manager.close()` 会在项目关闭时释放连接池。
-
-`db_manager.health_check()` 可以用于检查数据库是否可用。
 
 ## 数据库配置
 
@@ -155,7 +175,7 @@ mysql+pymysql://fastapi:fastapi@localhost:3306/fastapi_demo?charset=utf8mb4
 在已有的 `fastapi_demo` 数据库中创建 `users` 表并插入测试数据：
 
 ```powershell
-mysql --user=fastapi --password=fastapi --database=fastapi_demo --execute="SOURCE D:/Code/backend_demo/fastapi_demo/app/db/schemas/init.sql"
+mysql --user=fastapi --password=fastapi --database=fastapi_demo --execute="SOURCE D:/Code/backend_demo/fastapi_demo/app/db/init.sql"
 ```
 
 验证初始化结果：

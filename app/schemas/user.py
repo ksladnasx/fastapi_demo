@@ -2,7 +2,7 @@ from datetime import datetime
 
 from sqlmodel import SQLModel
 
-from app.db.models.user import UserBase
+from app.models.user import UserBase
 
 
 class UserCreate(UserBase):

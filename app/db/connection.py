@@ -3,11 +3,7 @@ from sqlmodel import create_engine
 
 from app.core.config import settings
 
-'''
-数据库连接管理器
-负责管理数据库引擎的创建、连接池配置和生命周期管理
-'''
-  
+
 class DatabaseConnection:
     def __init__(self) -> None:
         self._engine: Engine | None = None

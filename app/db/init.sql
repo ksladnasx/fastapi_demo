@@ -1,4 +1,3 @@
--- 数据库初始化文件，可以在这里创建数据库和表，并插入初始数据，直接在navicat中执行即可
 USE `fastapi_demo`;
 
 CREATE TABLE IF NOT EXISTS `users` (

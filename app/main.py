@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from app.api import users
 from app.core.config import settings
 from app.db.manager import db_manager
+from app.exceptions import register_exception_handlers
 
 
 @asynccontextmanager
@@ -23,7 +24,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# 路由分发
+register_exception_handlers(app)
 app.include_router(users.router)
 
 

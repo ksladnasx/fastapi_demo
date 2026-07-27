@@ -3,7 +3,7 @@ from typing import Any
 from sqlmodel import Session, select
 
 from app.db.manager import get_sync_db_session
-from app.db.models.user import User
+from app.models.user import User
 
 
 class UserDao:
@@ -41,12 +41,6 @@ class UserDao:
     @classmethod
     def create(cls, user_data: Any) -> User:
         with get_sync_db_session() as session:
-            if cls._get_by_username(session, user_data.username):
-                raise ValueError("Username already registered")
-
-            if cls._get_by_email(session, user_data.email):
-                raise ValueError("Email already registered")
-
             user = User.model_validate(user_data)
             session.add(user)
             session.commit()
@@ -61,19 +55,6 @@ class UserDao:
                 return None
 
             update_data = user_data.model_dump(exclude_unset=True)
-
-            username = update_data.get("username")
-            if username:
-                existing = cls._get_by_username(session, username)
-                if existing and existing.id != user_id:
-                    raise ValueError("Username already registered")
-
-            email = update_data.get("email")
-            if email:
-                existing = cls._get_by_email(session, email)
-                if existing and existing.id != user_id:
-                    raise ValueError("Email already registered")
-
             for field, value in update_data.items():
                 setattr(user, field, value)
 
