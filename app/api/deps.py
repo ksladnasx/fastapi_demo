@@ -9,7 +9,6 @@ from app.crud.user import UserDao
 from app.exceptions import UnauthorizedException
 from app.models.user import User
 
-
 bearer_scheme = HTTPBearer(auto_error=False)
 
 
