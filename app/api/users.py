@@ -24,6 +24,10 @@ def login(login_data: UserLogin):
     token = UserService.login(login_data)
     return success_response(data=token, message="Login successfully")
 
+'''
+FastAPI 会解析 `current_user: CurrentUserDep` 这个参数，通过CurrentUserDep的定义
+发现它依赖 `get_current_user`，于是会先自动执行 `get_current_user()`
+'''
 
 @router.get("/me", response_model=ApiResponse[UserRead])
 def get_me(current_user: CurrentUserDep):
