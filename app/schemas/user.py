@@ -33,3 +33,11 @@ class TokenRead(SQLModel):
     token_type: str = "bearer"
     expires_in: int
     user: UserRead
+
+class itemRead(SQLModel):
+    id: int
+    name: str
+    description: str | None = None
+    price: float
+    created_at: datetime
+    updated_at: datetime | None = None

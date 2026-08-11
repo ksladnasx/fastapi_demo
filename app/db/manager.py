@@ -16,7 +16,7 @@ class DatabaseManager:
         return self.connection.engine
 
     def init_db(self) -> None:
-        from app.models import User  # noqa: F401
+        from app.models import RecruitmentJob, User  # noqa: F401
 
         SQLModel.metadata.create_all(self.engine)
 

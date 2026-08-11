@@ -10,6 +10,7 @@ dependencies = [
     "pymysql>=1.2.0",
     "pytz>=2026.3.post1",
     "sqlmodel>=0.0.39",
+    "tzdata>=2026.3",
 ]
 [tool.fastapi]
 entrypoint = "app.main:app"

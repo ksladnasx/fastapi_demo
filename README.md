@@ -269,6 +269,8 @@ http://127.0.0.1:8000/docs
 | `GET` | `/user/get/{user_id}` | 获取指定用户 |
 | `PUT` | `/user/put/{user_id}` | 更新用户 |
 | `DELETE` | `/user/del/{user_id}` | 删除用户 |
+| `GET` | `/recruitment/jobs` | 查询已入库的招聘信息 |
+| `POST` | `/recruitment/import/givemeoc` | 爬取 GivemeOC 并写入数据库 |
 
 初始化脚本内置示例账号：
 
@@ -276,3 +278,32 @@ http://127.0.0.1:8000/docs
 | --- | --- |
 | `admin` | `admin123` |
 | `testuser` | `test123` |
+
+## GivemeOC 招聘信息导入
+
+爬虫需要使用你自己浏览器里的登录 Cookie 和页面 nonce。不要把这些值写进代码，放到项目根目录的 `.env` 文件即可：
+
+```env
+GIVEMEOC_COOKIE=你的完整 Cookie
+GIVEMEOC_NONCE=页面请求里的 nonce
+GIVEMEOC_REQUEST_DELAY_SECONDS=0.4
+GIVEMEOC_TIMEOUT_SECONDS=20
+```
+
+命令行导入 30 页：
+
+```powershell
+.\.venv\Scripts\python.exe tools\import_givemeoc_jobs.py --pages 30 --start-page 1
+```
+
+也可以在服务启动后通过接口触发。这个接口会使用你的私有 Cookie，需要先登录并携带 `Authorization`：
+
+```text
+POST http://127.0.0.1:8000/recruitment/import/givemeoc?pages=30&start_page=1
+```
+
+前端页面在 `frontend/index.html`，打开后可以查询：
+
+```text
+GET /recruitment/jobs?page=1&page_size=20&keyword=&location=&progress_status=
+```
