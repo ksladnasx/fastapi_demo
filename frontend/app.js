@@ -191,8 +191,10 @@ async function sendRequest(method, path, options = {}) {
   const url = `${getBaseUrl()}${path}`;
   const headers = {
     "Content-Type": "application/json",
+    
   };
-
+  
+  const credentials = "include"; // Include cookies in cross-origin requests.
   if (options.auth) {
     headers.Authorization = `Bearer ${getToken()}`;
   }
@@ -212,6 +214,7 @@ async function sendRequest(method, path, options = {}) {
     const response = await fetch(url, {
       method,
       headers,
+      credentials,
       body: options.body ? JSON.stringify(options.body) : undefined,
     });
     const data = await readJson(response);

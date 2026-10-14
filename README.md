@@ -214,7 +214,7 @@ header.payload.signature
 
 - 数据库名：`fastapi_demo`
 - 用户名：`fastapi`
-- 密码：`fastapi`
+- 密码：`123456`
 
 项目默认连接地址在 `app/core/config.py`：
 
