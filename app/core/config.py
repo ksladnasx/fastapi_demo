@@ -6,10 +6,8 @@ class Settings(BaseSettings):
     DATABASE_ECHO: bool = False
     SECRET_KEY: str = "123456"   #用于服务端加密的密钥
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24
-    GIVEMEOC_COOKIE: str | None = None
-    GIVEMEOC_NONCE: str | None = None
-    GIVEMEOC_REQUEST_DELAY_SECONDS: float = 0.4
-    GIVEMEOC_TIMEOUT_SECONDS: int = 20
+    SESSION_COOKIE_NAME: str = "fastapi_demo_session"
+    VISIBLE_COOKIE_NAME: str = "fastapi_demo_visible"
 
     class Config:
         env_file = ".env"

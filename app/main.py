@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import items, recruitment, users
+from app.api import cookies, items, users
 from app.core.config import settings
 from app.db.manager import db_manager
 from app.exceptions import register_exception_handlers
@@ -37,6 +37,7 @@ app.add_middleware(
         "http://127.0.0.1:5500",
         "http://localhost:8000",
         "http://127.0.0.1:8000",
+        "null",  # Allows opening frontend/index.html directly from disk for demos.
     ],
     allow_methods=["*"],
     allow_headers=["*"],
@@ -47,7 +48,7 @@ register_exception_handlers(app)
 # 路由分发，将所有以 /users 开头的请求交给 users.router 处理
 app.include_router(users.router)
 app.include_router(items.router)
-app.include_router(recruitment.router)
+app.include_router(cookies.router)
 
 
 @app.get("/")

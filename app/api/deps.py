@@ -1,9 +1,10 @@
 from typing import Annotated
 
-from fastapi import Depends, Query
+from fastapi import Cookie, Depends, Query
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel
 
+from app.core.config import settings
 from app.core.security import decode_access_token
 from app.crud.user import UserDao
 from app.exceptions import UnauthorizedException
@@ -27,13 +28,11 @@ def get_pagination(
 PaginationDep = Annotated[PaginationParams, Depends(get_pagination)]
 
 
-def get_current_user(
-    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer_scheme)],
-) -> User:
-    if credentials is None:
+def get_user_from_access_token(token: str | None) -> User:
+    if not token:
         raise UnauthorizedException("Missing access token")
 
-    payload = decode_access_token(credentials.credentials)
+    payload = decode_access_token(token)
     if payload is None:
         raise UnauthorizedException("Invalid or expired access token")
 
@@ -51,4 +50,19 @@ def get_current_user(
     return user
 
 
+def get_current_user(
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer_scheme)],
+) -> User:
+    if credentials is None:
+        raise UnauthorizedException("Missing access token")
+    return get_user_from_access_token(credentials.credentials)
+
+
+def get_current_user_from_cookie(
+    session_token: Annotated[str | None, Cookie(alias=settings.SESSION_COOKIE_NAME)] = None,
+) -> User:
+    return get_user_from_access_token(session_token)
+
+
 CurrentUserDep = Annotated[User, Depends(get_current_user)]
+CookieCurrentUserDep = Annotated[User, Depends(get_current_user_from_cookie)]

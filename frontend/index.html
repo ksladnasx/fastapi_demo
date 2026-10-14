@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>FastAPI 招聘信息面板</title>
+    <title>FastAPI 认证学习演示</title>
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
@@ -11,8 +11,10 @@
       <section class="workspace">
         <header class="topbar">
           <div>
-            <h1>FastAPI 招聘信息面板</h1>
-            <p>导入 GivemeOC 招聘数据，查询已入库的公司官网和招聘链接。</p>
+            <h1>FastAPI 认证学习演示</h1>
+            <p>
+              对比两种常见认证方式：前端保存 Token，以及后端通过 Set-Cookie 把 Cookie 写入浏览器。
+            </p>
           </div>
           <label class="api-url">
             API 地址
@@ -20,74 +22,89 @@
           </label>
         </header>
 
-        <section class="job-toolbar">
-          <div class="filters">
-            <label>关键词<input id="jobKeyword" placeholder="公司、职位、摘要" /></label>
-            <label>地点<input id="jobLocation" placeholder="例如 Hong Kong" /></label>
-            <label>状态<input id="jobStatus" placeholder="例如 Open" /></label>
-            <label>每页数量<input id="jobPageSize" type="number" min="1" max="100" value="20" /></label>
-          </div>
-          <div class="actions">
-            <button id="loadJobsBtn" type="button">查询招聘信息</button>
-            <button id="prevJobsBtn" type="button" class="secondary">上一页</button>
-            <button id="nextJobsBtn" type="button" class="secondary">下一页</button>
-          </div>
-          <div class="import-row">
-            <label>导入页数<input id="importPages" type="number" min="1" max="100" value="30" /></label>
-            <label>起始页<input id="importStartPage" type="number" min="1" value="1" /></label>
-            <button id="importJobsBtn" type="button">爬取并入库</button>
-            <span id="jobMeta">等待查询</span>
-          </div>
-        </section>
-
-        <section class="jobs-section">
-          <div id="jobsList" class="jobs-list">
-            <div class="empty-state">还没有加载招聘信息。</div>
-          </div>
+        <section class="learn-card">
+          <h2>学习重点</h2>
+          <ol>
+            <li><strong>Token 模式：</strong>登录接口返回 access_token，前端把它保存到 localStorage，并手动放进 Authorization 请求头。</li>
+            <li><strong>Cookie 模式：</strong>登录接口不要求前端保存 token，而是通过响应头 Set-Cookie 让浏览器自动保存 Cookie。</li>
+            <li><strong>后续请求：</strong>前端 fetch 使用 <code>credentials: "include"</code>，浏览器会自动把 Cookie 带给后端。</li>
+            <li><strong>HttpOnly：</strong>会话 Cookie 不能被 JavaScript 读取，但可以在浏览器开发者工具的 Application / Cookies 中看到。</li>
+          </ol>
         </section>
 
         <div class="grid">
           <section class="panel">
-            <h2>注册</h2>
+            <h2>注册测试用户</h2>
             <div class="form-grid">
               <label>用户名<input id="registerUsername" value="newuser" /></label>
               <label>邮箱<input id="registerEmail" value="newuser@example.com" /></label>
               <label>姓名<input id="registerFullName" value="New User" /></label>
               <label>密码<input id="registerPassword" type="password" value="newuser123" /></label>
             </div>
-            <button id="registerBtn" type="button">发送注册请求</button>
+            <button id="registerBtn" type="button">POST /user/register</button>
           </section>
 
           <section class="panel">
-            <h2>登录</h2>
+            <h2>登录信息</h2>
+            <p>下面的 Token 登录和 Cookie 登录会共用这组账号密码。</p>
             <div class="form-grid">
               <label>用户名或邮箱<input id="loginUsername" value="admin" /></label>
               <label>密码<input id="loginPassword" type="password" value="admin123" /></label>
             </div>
-            <button id="loginBtn" type="button">登录并保存 token</button>
           </section>
+        </div>
 
+        <div class="grid">
           <section class="panel token-panel">
-            <h2>当前 Token</h2>
-            <textarea id="tokenBox" spellcheck="false" placeholder="登录成功后会自动填入 access_token"></textarea>
+            <h2>方式 A：Authorization Token</h2>
+            <p>前端拿到 access_token 后，自己保存，并在请求头中手动发送。</p>
+            <div class="actions vertical">
+              <button id="loginBtn" type="button">POST /user/login，保存 token</button>
+              <button id="meBtn" type="button">GET /user/me，使用 Authorization</button>
+              <button id="usersBtn" type="button">GET /user/get_users，使用 Authorization</button>
+            </div>
+            <textarea id="tokenBox" spellcheck="false" placeholder="登录成功后这里会出现 access_token"></textarea>
             <div class="actions">
-              <button id="saveTokenBtn" type="button">保存 token</button>
+              <button id="saveTokenBtn" type="button" class="secondary">保存 token</button>
               <button id="clearTokenBtn" type="button" class="secondary">清空 token</button>
             </div>
-          </section>
-
-          <section class="panel">
-            <h2>带认证请求</h2>
-            <div class="actions vertical">
-              <button id="meBtn" type="button">GET /user/me</button>
-              <button id="usersBtn" type="button">GET /user/get_users</button>
-            </div>
             <div class="request-preview">
-              <span>本次认证头</span>
+              <span>本次认证请求头</span>
               <code id="authHeader">Authorization: Bearer 未设置</code>
             </div>
           </section>
+
+          <section class="panel cookie-panel">
+            <h2>方式 B：HttpOnly Cookie</h2>
+            <p>后端通过 Set-Cookie 写入会话 Cookie。前端不需要保存 token，也读不到 HttpOnly Cookie。</p>
+            <div class="actions vertical">
+              <button id="cookieLoginBtn" type="button">POST /cookie/login，后端设置 Cookie</button>
+              <button id="cookieMeBtn" type="button">GET /cookie/me，浏览器自动带 Cookie</button>
+              <button id="cookieLogoutBtn" type="button" class="secondary">POST /cookie/logout，后端删除 Cookie</button>
+            </div>
+            <div class="request-preview">
+              <span>Cookie 观察提示</span>
+              <code>打开浏览器开发者工具 → Application → Cookies → 127.0.0.1</code>
+            </div>
+            <p class="note">
+              注意：HttpOnly Cookie 不能通过 <code>document.cookie</code> 读取，这是为了减少 XSS 偷 Cookie 的风险。
+            </p>
+          </section>
         </div>
+
+        <section class="panel">
+          <h2>额外演示：非 HttpOnly 可见 Cookie</h2>
+          <p>这个 Cookie 故意不设置 HttpOnly，只是为了让你看到 JavaScript 可以读取普通 Cookie。</p>
+          <div class="actions">
+            <button id="visibleCookieBtn" type="button">POST /cookie/visible，设置可见 Cookie</button>
+            <button id="clearVisibleCookieBtn" type="button" class="secondary">DELETE /cookie/visible，删除可见 Cookie</button>
+            <button id="refreshDocumentCookieBtn" type="button" class="secondary">刷新 document.cookie 显示</button>
+          </div>
+          <div class="request-preview">
+            <span>当前 document.cookie</span>
+            <code id="documentCookie">document.cookie: </code>
+          </div>
+        </section>
 
         <section class="console-panel">
           <div class="console-head">
