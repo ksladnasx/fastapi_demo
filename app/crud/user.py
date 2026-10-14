@@ -6,7 +6,10 @@ from app.db.manager import get_sync_db_session
 from app.models.user import User
 
 
+#对用户的数据库操作函数
 class UserDao:
+    # cls 是 类方法（classmethod）的第一个参数，代表类本身，你想怎么取名都行
+    # 就像实例方法的第一个参数 self 代表实例本身。
     @classmethod
     def get(cls, user_id: int) -> User | None:
         with get_sync_db_session() as session:
@@ -63,14 +66,15 @@ class UserDao:
             for field, value in update_data.items():
                 setattr(user, field, value)
 
-            session.add(user)
-            session.commit()
-            session.refresh(user)
+            session.add(user)  #添加记录
+            session.commit()  #提交更改
+            session.refresh(user) #将数据库的信息同步到实例上
             return user
 
     @classmethod
     def delete(cls, user_id: int) -> bool:
         with get_sync_db_session() as session:
+            #先通过查询找到需要删除的记录
             user = session.get(User, user_id)
             if not user:
                 return False
@@ -81,6 +85,7 @@ class UserDao:
 
     @staticmethod
     def _get_by_username(session: Session, username: str) -> User | None:
+        #对于查询较为复杂条件的情况
         statement = select(User).where(User.username == username)
         return session.exec(statement).first()
 

@@ -1,9 +1,14 @@
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Column, DateTime, func
-from sqlmodel import Field, SQLModel
+from sqlmodel import Field, Relationship, SQLModel
+
+if TYPE_CHECKING:
+    from app.models.item import Item
 
 
+# ???????
 class UserBase(SQLModel):
     username: str = Field(max_length=50, unique=True, index=True)
     email: str = Field(max_length=100, unique=True, index=True)
@@ -11,6 +16,7 @@ class UserBase(SQLModel):
     is_active: bool = Field(default=True)
 
 
+# ??????????????????????????
 class User(UserBase, table=True):
     __tablename__ = "users"
 
@@ -22,5 +28,7 @@ class User(UserBase, table=True):
     )
     updated_at: datetime | None = Field(
         default=None,
-        sa_column=Column(DateTime, onupdate=func.now()),
+        sa_column=Column(DateTime, server_default=func.now(), onupdate=func.now()),
     )
+
+    items: list["Item"] = Relationship(back_populates="owner")
